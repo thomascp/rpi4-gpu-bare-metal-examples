@@ -4,15 +4,17 @@ BOOT_MNT 	?=
 ROOTFS_MNT 	?=
 
 ifeq ($(BOOT_MNT),)
-$(error "Please set BOOT_MNT to your boot parition. e.g. /media/user/boot")
+#$(error "Please set BOOT_MNT to your boot parition. e.g. /media/user/boot")
+$(info "Please set BOOT_MNT to your boot parition. e.g. /media/user/boot")
 endif
 
 ifeq ($(ROOTFS_MNT),)
-$(error "Please set ROOTFS_MNT to your rootfs parition. e.g. /media/user/rootfs")
+$(info "Please set ROOTFS_MNT to your rootfs parition. e.g. /media/user/rootfs")
 endif
 
-
-BIN_PREFIX	:= aarch64-linux-gnu-
+BIN_PREFIX      := /home/pcheng/rpi/tools/gcc-arm-10.3-2021.07-aarch64-aarch64-none-elf/bin/aarch64-none-elf-
+#BIN_PREFIX      := /home/pcheng/rpi/tools/arm-gnu-toolchain-14.3.rel1-aarch64-aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
+#BIN_PREFIX	:= aarch64-linux-gnu-
 CXX			:= $(BIN_PREFIX)g++
 CC			:= $(BIN_PREFIX)gcc
 AS			:= $(BIN_PREFIX)as
@@ -20,7 +22,8 @@ OBJCOPY		:= $(BIN_PREFIX)objcopy
 LD			:= $(BIN_PREFIX)ld
 FORMAT 		:= clang-format-14
 
-USE_LD		:= gold
+#USE_LD		:= gold
+USE_LD		:= bfd
 
 TARGET		:= rpi4-gpu-bare-metal
 TARGET_IMG	:= $(TARGET).img
@@ -149,9 +152,9 @@ clean:
 	rm -rf $(BUILD)
 
 install: all
-	cp $(BUILD)/$(TARGET_IMG) $(BOOT_MNT)/kernel8.img
-	eject $(BOOT_MNT)
-	eject $(ROOTFS_MNT)
+	cp $(BUILD)/$(TARGET_IMG) $(BUILD)/kernel8.img
+	#eject $(BOOT_MNT)
+	#eject $(ROOTFS_MNT)
 
 
 FMT_FILES := $(shell find src -type f -name "*.[c\|h]pp")
