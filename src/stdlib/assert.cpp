@@ -13,4 +13,14 @@ extern "C"
 
         panic("Assertion failed");
     }
+
+    void __assert_func(const char* file, int line,
+                              const char* func, const char* failedexpr)
+    {
+	LOG("\nAssertion failed in function \"%s\" at %s:%u :\n\"%s\"",
+            func, file, line, failedexpr);
+
+        panic("Assertion failed");
+
+    }
 }

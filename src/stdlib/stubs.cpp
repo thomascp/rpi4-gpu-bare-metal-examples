@@ -4,6 +4,10 @@
 
 extern "C"
 {
+#undef stderr
+#undef stdout
+#undef stdin
+
     FILE* stderr = (FILE*)2;
     FILE* stdout = (FILE*)1;
 

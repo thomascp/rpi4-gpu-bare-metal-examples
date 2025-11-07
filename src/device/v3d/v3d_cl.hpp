@@ -678,7 +678,7 @@ struct SampleState : CLPacket
     SampleState(u8 mask, f32 coverage) :
         CLPacket(OP_SAMPLE_STATE),
         mask(mask),
-        coverage(std::bit_cast<u32>(coverage) >> 16)
+        coverage(reinterpret_cast<u32&>(coverage) >> 16)
     {
     }
 
