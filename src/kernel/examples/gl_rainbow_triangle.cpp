@@ -8,6 +8,7 @@
 #include "kernel/cl_emitter.hpp"
 #include "kernel/kernel.hpp"
 #include "kernel/logging.hpp"
+#include "kernel/gfx/color.hpp"
 
 static void v3dInvalidateL2T()
 {
@@ -200,7 +201,9 @@ static v3d::QPUInstr g_coord_shader_buff[] = {
 };
 
 static f32 g_pos_attr_buff[] = {
-    -1.f, -1.f, 0.f, 1.f, -1.f, 0.f, 0.f, 1.f, 0.f,
+    -0.52f,-0.3f, 0.f,     // Left
+    0.52f,-0.3f, 0.f,    // Right
+    0.0f,  0.6f, 0.f,      // Top
 };
 
 static u8 g_color_attr_buff[] = {
@@ -487,28 +490,52 @@ void rainbowTriangleGL(Kernel& kern)
     HEXDUMP(indirect.startPtr(), indirect.size());
     LOG("\n");
 
-    LOG("Invalidating caches...\n");
-    v3dInvalidateCaches();
+    while (1)
+    {
+        f32 *posattr = reinterpret_cast<f32 *>(pos_attr_addr);
 
-    LOG("Binning...\n");
-    size_t last_bfc = getBfCount();
-    v3d::qpu::executeBin(bcl.startPaddr(), bcl.endPaddr(), tile_alloc.paddr(),
-                         tile_alloc_size, tile_state.paddr());
+        static float angle = 0.0f;
 
-    while (getBfCount() <= last_bfc)
-        ;
+        angle += 0.002f;          // 每帧旋转一点点
 
-    LOG("Invalidating caches...\n");
-    v3dInvalidateCaches();
+        float c = (float)cos(angle);
+        float s = (float)sin(angle);
 
-    LOG("Rendering...\n");
-    size_t last_rfc = getRfCount();
-    v3d::qpu::executeRender(rcl.startPaddr(), rcl.endPaddr());
+        for (int i = 0; i < 3; i++)
+        {
+            float x = posattr[i * 3 + 0];
+            float y = posattr[i * 3 + 1];
 
-    while (getRfCount() <= last_rfc)
-        ;
+            posattr[i * 3 + 0] = x * c - y * s;
+            posattr[i * 3 + 1] = x * s + y * c;
+            posattr[i * 3 + 2] = 0.0f;
+        }
 
-    kern.gfx()->drawer()->drawTex(render_target.ptr(), 600, 200, width, height);
+        //kern.gfx()->drawer()->fillRect(600, 200, width, height, gfx::Color::BLACK);
+        
+        LOG("Invalidating caches...\n");
+        v3dInvalidateCaches();
+
+        LOG("Binning...\n");
+        size_t last_bfc = getBfCount();
+        v3d::qpu::executeBin(bcl.startPaddr(), bcl.endPaddr(), tile_alloc.paddr(),
+                            tile_alloc_size, tile_state.paddr());
+
+        while (getBfCount() <= last_bfc)
+            ;
+
+        LOG("Invalidating caches...\n");
+        v3dInvalidateCaches();
+
+        LOG("Rendering...\n");
+        size_t last_rfc = getRfCount();
+        v3d::qpu::executeRender(rcl.startPaddr(), rcl.endPaddr());
+
+        while (getRfCount() <= last_rfc)
+            ;
+
+        kern.gfx()->drawer()->drawTex(render_target.ptr(), 600, 200, width, height);
+    }
 
     LOG("Done!\n\n\n");
 
