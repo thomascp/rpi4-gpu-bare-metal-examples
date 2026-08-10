@@ -210,6 +210,173 @@ static u8 g_color_attr_buff[] = {
     0xFF, 0x00, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0x00, 0xFF, 0xFF,
 };
 
+
+// Raspberry Pi 4 / BCM2711 CPU physical addresses
+static constexpr uintptr_t V3D_HUB_BASE  = 0xFEC00000;
+static constexpr uintptr_t V3D_CORE0_BASE = 0xFEC04000;
+
+// HUB identification registers
+static constexpr uint32_t V3D_HUB_IDENT0 = 0x00008;
+static constexpr uint32_t V3D_HUB_IDENT1 = 0x0000C;
+static constexpr uint32_t V3D_HUB_IDENT2 = 0x00010;
+static constexpr uint32_t V3D_HUB_IDENT3 = 0x00014;
+
+// Core identification registers.
+// These offsets are relative to V3D_CORE0_BASE.
+static constexpr uint32_t V3D_CTL_IDENT0 = 0x00000;
+static constexpr uint32_t V3D_CTL_IDENT1 = 0x00004;
+static constexpr uint32_t V3D_CTL_IDENT2 = 0x00008;
+
+static inline uint32_t mmio_read32(uintptr_t addr)
+{
+    return *reinterpret_cast<volatile uint32_t *>(addr);
+}
+
+static inline uint32_t get_bits(uint32_t value,
+                                unsigned high,
+                                unsigned low)
+{
+    const unsigned width = high - low + 1;
+
+    uint32_t mask;
+
+    if (width == 32)
+        mask = 0xFFFFFFFFu;
+    else
+        mask = (1u << width) - 1u;
+
+    return (value >> low) & mask;
+}
+
+void print_v3d_version()
+{
+    const uint32_t hub_ident0 =
+        mmio_read32(V3D_HUB_BASE + V3D_HUB_IDENT0);
+
+    const uint32_t hub_ident1 =
+        mmio_read32(V3D_HUB_BASE + V3D_HUB_IDENT1);
+
+    const uint32_t hub_ident2 =
+        mmio_read32(V3D_HUB_BASE + V3D_HUB_IDENT2);
+
+    const uint32_t hub_ident3 =
+        mmio_read32(V3D_HUB_BASE + V3D_HUB_IDENT3);
+
+
+    LOG("V3D HUB registers:\n");
+
+    LOG("  IDENT0 = 0x%08x\n", hub_ident0);
+    LOG("  IDENT1 = 0x%08x\n", hub_ident1);
+    LOG("  IDENT2 = 0x%08x\n", hub_ident2);
+    LOG("  IDENT3 = 0x%08x\n", hub_ident3);
+
+
+    /*
+     * Linux v3d driver definitions:
+     *
+     * HUB_IDENT1:
+     *   bits  3:0  = TVER
+     *   bits  7:4  = REV
+     *   bits 11:8  = NCORES
+     *
+     * HUB_IDENT3:
+     *   bits 15:8  = IPREV
+     *   bits  7:0  = IPIDX
+     */
+
+    const uint32_t tver =
+        get_bits(hub_ident1, 3, 0);
+
+    const uint32_t rev =
+        get_bits(hub_ident1, 7, 4);
+
+    const uint32_t cores =
+        get_bits(hub_ident1, 11, 8);
+
+    const uint32_t iprev =
+        get_bits(hub_ident3, 15, 8);
+
+    const uint32_t ipidx =
+        get_bits(hub_ident3, 7, 0);
+
+
+    LOG("\nV3D revision:\n");
+
+    LOG("  %u.%u.%u.%u\n",
+           tver,
+           rev,
+           iprev,
+           ipidx);
+
+    LOG("  cores = %u\n", cores);
+
+
+    /*
+     * Some feature bits from HUB_IDENT1 / IDENT2.
+     */
+    const bool has_tfu =
+        (hub_ident1 & (1u << 17)) != 0;
+
+    const bool has_tsy =
+        (hub_ident1 & (1u << 18)) != 0;
+
+    const bool has_mso =
+        (hub_ident1 & (1u << 19)) != 0;
+
+    const bool has_l3c =
+        (hub_ident1 & (1u << 16)) != 0;
+
+    const bool has_mmu =
+        (hub_ident2 & (1u << 8)) != 0;
+
+    const uint32_t l3_kb =
+        get_bits(hub_ident2, 7, 0);
+
+
+    LOG("\nFeatures:\n");
+
+    LOG("  MMU = %s\n",
+           has_mmu ? "yes" : "no");
+
+    LOG("  TFU = %s\n",
+           has_tfu ? "yes" : "no");
+
+    LOG("  TSY = %s\n",
+           has_tsy ? "yes" : "no");
+
+    LOG("  MSO = %s\n",
+           has_mso ? "yes" : "no");
+
+    LOG("  L3C = %s",
+           has_l3c ? "yes" : "no");
+
+    if (has_l3c)
+        LOG(" (%u KB)", l3_kb);
+
+    LOG("\n");
+
+
+    /*
+     * Also read core 0 identification.
+     */
+
+    const uint32_t core_ident0 =
+        mmio_read32(V3D_CORE0_BASE + V3D_CTL_IDENT0);
+
+    const uint32_t core_ident1 =
+        mmio_read32(V3D_CORE0_BASE + V3D_CTL_IDENT1);
+
+    const uint32_t core_ident2 =
+        mmio_read32(V3D_CORE0_BASE + V3D_CTL_IDENT2);
+
+
+    LOG("\nCore 0 registers:\n");
+
+    LOG("  IDENT0 = 0x%08x\n", core_ident0);
+    LOG("  IDENT1 = 0x%08x\n", core_ident1);
+    LOG("  IDENT2 = 0x%08x\n", core_ident2);
+}
+
 void rainbowTriangleGL(Kernel& kern)
 {
     size_t width = 500;
@@ -221,6 +388,8 @@ void rainbowTriangleGL(Kernel& kern)
     CLEmitter attr0;
     CLEmitter attr1;
     CLEmitter state;
+
+    print_v3d_version();
 
     /* =============== ATTRIBUTES ============== */
 
