@@ -85,29 +85,15 @@ void main()
 */
 
 static v3d::QPUInstr g_frag_shader_buff[] = {
-    // payload_w : rf0
-    // payload_w_centroid : rf1
-    // payload_z : rf2
-
-    0x3D103186BB800000, // nop                           ; nop ; ldvary.r0
-    0x54003046BBC00000, // nop                           ; fmul r1, r0, rf0
-    0x3D10A18605829000, // fadd rf6, r1, r5              ; nop ; ldvary.r2
-    0x540030C6BBC80000, // nop                           ; fmul r3, r2, rf0
-    0x3D1121850582B000, // fadd rf5, r3, r5              ; nop ; ldvary.r4
-    0x54003006BBD00000, // nop                           ; fmul r0, r4, rf0
-    0x3D30618405828000, // fadd rf4, r0, r5              ; nop ; thrsw;
-                        // ldvary.r1
-    0x54203086BBC40000, // nop                           ; fmul r2, r1, rf0 ;
-                        // thrsw
-    0x3C0021830582A000, // fadd rf3, r2, r5              ; nop
-    0x3C2031873583E185, // vfpack tlb, rf6, rf5          ; nop ; thrsw
-    0x3C0031873583E103, // vfpack tlb, rf4, rf3          ; nop
-    0x3C003186BB800000, // nop                           ; nop
-
-    // out[0] = vary[0] * payload_w + r5
-    // out[1] = vary[1] * payload_w + r5
-    // out[2] = vary[2] * payload_w + r5
-    // out[3] = vary[3] * payload_w + r5
+0x3d103186bb800000, // nop                           ; nop                         ; ldvary.r0
+0x5510b046bbc00000, // nop                           ; fmul r1, r0, rf0            ; ldvary.r2
+0x551120c305ca9000, // fadd rf3, r1, r5              ; fmul r3, r2, rf0            ; ldvary.r4
+0x5530600405d2b000, // fadd rf4, r3, r5              ; fmul r0, r4, rf0            ; thrsw; ldvary.r1
+0x5420208505c68000, // fadd rf5, r0, r5              ; fmul r2, r1, rf0            ; thrsw
+0x3c0021860582a000, // fadd rf6, r2, r5              ; nop
+0x3c2031873583e0c4, // vfpack tlb, rf3, rf4          ; nop                         ; thrsw
+0x3c0031873583e146, // vfpack tlb, rf5, rf6          ; nop
+0x3c003186bb800000, // nop                           ; nop
 };
 
 /*
@@ -125,78 +111,52 @@ void main()
 */
 
 static v3d::QPUInstr g_vtx_shader_buff[] = {
-    0x3DE02187BC807000, // ldvpmv_in rf7, 0              ; nop
-    0x3DE02189BC807001, // ldvpmv_in rf9, 1              ; nop
-    0x3DE0218ABC807002, // ldvpmv_in rf10, 2             ; nop
-    0x3DE02183BC807003, // ldvpmv_in rf3, 3              ; nop
-    0x3D823186BB800000, // nop                           ; nop ; ldunifrf.rf8
-    0x3DE02184BC807004, // ldvpmv_in rf4, 4              ; nop
-    0x3C403186BB800000, // nop                           ; nop ; ldunif
-    0x55E02005BCB871C5, // ldvpmv_in rf5, 5              ; fmul r0, rf7, r5
-    0x3DE02186BC807006, // ldvpmv_in rf6, 6              ; nop
-    0x3C403181F5818000, // ftoin r1, r0                  ; nop ; ldunif
-    0x3DE02180F88370C4, // stvpmv 4, rf3                 ; nop
-    0x54403086BBB80240, // nop                           ; fmul r2, rf9, r5 ;
-                        // ldunif
-    0x3DE02180F8837105, // stvpmv 5, rf4                 ; nop
-    0x3DE02180F8837146, // stvpmv 6, rf5                 ; nop
-    0x54403003F5B9A280, // ftoin r3, r2                  ; fmul r0, rf10, r5 ;
-                        // ldunif
-    0x3DE02180F8837187, // stvpmv 7, rf6                 ; nop
-    0x3DE02180F880F000, // stvpmv 0, r1                  ; nop
-    0x3C00318405828000, // fadd r4, r0, r5               ; nop
-    0x3DE02180F881F001, // stvpmv 1, r3                  ; nop
-    0x3DE02180F8827002, // stvpmv 2, r4                  ; nop
-    0x3DE02180F8837203, // stvpmv 3, rf8                 ; nop
-    0x3C003186BB816000, // vpmwt -                       ; nop
-    0x3C203186BB800000, // nop                           ; nop ; thrsw
-    0x3C003186BB800000, // nop                           ; nop
-    0x3C003186BB800000, // nop                           ; nop
-
-    // vp
-    // out[0] = (int)(in[0] * unif[1])
-    // out[1] = (int)(in[1] * unif[2])
-    // zs
-    // out[2] = in[2] * unif[3] + unif[4]
-    // 1/w
-    // out[3] = unif[0]
-    // varying
-    // out[4] = in[3]
-    // out[5] = in[4]
-    // out[6] = in[5]
-    // out[7] = in[6]
+0x3de02183bc807000, // ldvpmv_in rf3, 0              ; nop
+0x3de02184bc807001, // ldvpmv_in rf4, 1              ; nop
+0x3de02185bc807002, // ldvpmv_in rf5, 2              ; nop
+0x3de02186bc807003, // ldvpmv_in rf6, 3              ; nop
+0x3de02187bc807004, // ldvpmv_in rf7, 4              ; nop
+0x3c403186bb800000, // nop                           ; nop                         ; ldunif (vp_x_scale)
+0x55e02008bcb870c5, // ldvpmv_in rf8, 5              ; fmul r0, rf3, r5
+0x3de02189bc807006, // ldvpmv_in rf9, 6              ; nop
+0x3c403181f6800000, // ffloor r1, r0                 ; nop                         ; ldunif (vp_y_scale)
+0x3de02180f8837184, // stvpmv 4, rf6                 ; nop
+0x54403083f5bb9100, // ftoiz r3, r1                  ; fmul r2, rf4, r5            ; ldunif (vp_z_scale)
+0x3de02180f88371c5, // stvpmv 5, rf7                 ; nop
+0x3de02180f8837206, // stvpmv 6, rf8                 ; nop
+0x54403004f6b82140, // ffloor r4, r2                 ; fmul r0, rf5, r5            ; ldunif (vp_z_offset)
+0x3de02180f8837247, // stvpmv 7, rf9                 ; nop
+0x3c003181f583c000, // ftoiz r1, r4                  ; nop
+0x3de02180f881f000, // stvpmv 0, r3                  ; nop
+0x3c40318205828000, // fadd r2, r0, r5               ; nop                         ; ldunif (0x3f800000 / 1.000000)
+0x3de02180f880f001, // stvpmv 1, r1                  ; nop
+0x3de02180f8817002, // stvpmv 2, r2                  ; nop
+0x3de02180f882f003, // stvpmv 3, r5                  ; nop
+0x3c003186bb816000, // vpmwt -                       ; nop
+0x3c203186bb800000, // nop                           ; nop                         ; thrsw
+0x3c003186bb800000, // nop                           ; nop
+0x3c003186bb800000, // nop                           ; nop
 };
 
 static v3d::QPUInstr g_coord_shader_buff[] = {
-    0x3DE02184BC807000, // ldvpmv_in rf4, 0              ; nop
-    0x3DE02185BC807001, // ldvpmv_in rf5, 1              ; nop
-    0x3DE02183BC807002, // ldvpmv_in rf3, 2              ; nop
-    0x3DE02180F8837100, // stvpmv 0, rf4                 ; nop
-    0x3DE02180F8837141, // stvpmv 1, rf5                 ; nop
-    0x3C403186BB800000, // nop                           ; nop ; ldunif
-    0x3DE02180F88370C2, // stvpmv 2, rf3                 ; nop
-    0x3DE02180F882F003, // stvpmv 3, r5                  ; nop
-    0x3C403186BB800000, // nop                           ; nop ; ldunif
-    0x54403006BBB80100, // nop                           ; fmul r0, rf4, r5 ;
-                        // ldunif
-    0x54003081F5B98140, // ftoin r1, r0                  ; fmul r2, rf5, r5
-    0x3DE02180F880F004, // stvpmv 4, r1                  ; nop
-    0x3C003183F581A000, // ftoin r3, r2                  ; nop
-    0x3DE02180F881F005, // stvpmv 5, r3                  ; nop
-    0x3C003186BB816000, // vpmwt -                       ; nop
-    0x3C203186BB800000, // nop                           ; nop ; thrsw
-    0x3C003186BB800000, // nop                           ; nop
-    0x3C003186BB800000, // nop                           ; nop
-
-    // X, Y, Z, W, Xs, Ys
-    // pos
-    // out[0] = in[0]
-    // out[1] = in[1]
-    // out[2] = in[2]
-    // out[3] = unif[0]
-    // vp
-    // out[4] = (int)(in[0] * unif[1])
-    // out[5] = (int)(in[1] * unif[2])
+0x3de02183bc807000, // ldvpmv_in rf3, 0              ; nop
+0x3c403186bb800000, // nop                           ; nop                         ; ldunif (vp_x_scale)
+0x55e02004bcb870c1, // ldvpmv_in rf4, 1              ; fmul r0, rf3, r5
+0x3de02185bc807002, // ldvpmv_in rf5, 2              ; nop
+0x3c403181f6800000, // ffloor r1, r0                 ; nop                         ; ldunif (vp_y_scale)
+0x3de02180f88370c0, // stvpmv 0, rf3                 ; nop
+0x55e02080f8bb7101, // stvpmv 1, rf4                 ; fmul r2, rf4, r5
+0x3c403183f5839000, // ftoiz r3, r1                  ; nop                         ; ldunif (0x3f800000 / 1.000000)
+0x3de02180f8837142, // stvpmv 2, rf5                 ; nop
+0x3c003184f6802000, // ffloor r4, r2                 ; nop
+0x3de02180f882f003, // stvpmv 3, r5                  ; nop
+0x3c003180f583c000, // ftoiz r0, r4                  ; nop
+0x3de02180f881f004, // stvpmv 4, r3                  ; nop
+0x3de02180f8807005, // stvpmv 5, r0                  ; nop
+0x3c003186bb816000, // vpmwt -                       ; nop
+0x3c203186bb800000, // nop                           ; nop                         ; thrsw
+0x3c003186bb800000, // nop                           ; nop
+0x3c003186bb800000, // nop                           ; nop
 };
 
 static f32 g_pos_attr_buff[] = {
@@ -249,17 +209,17 @@ void rainbowTriangleGL(Kernel& kern)
 
     // vertex uniforms
     u32 vtx_unif_addr = indirect.paddr();
+    indirect << (width / 2) * 256.f;   // vp_x_scale
+    indirect << (height / 2) * -256.f; // vp_y_scale
+    indirect << 0.5f;                  // vp_z_scale
+    indirect << 0.5f;                  // vp_z_offset
     indirect << 1.0f;                  // w
-    indirect << (width / 2) * 256.f;   // viewport x scale
-    indirect << (height / 2) * -256.f; // viewport y scale
-    indirect << 0.5f;                  // viewport z scale
-    indirect << 0.5f;                  // viewport z offset
 
     // coordinate uniforms
     u32 coord_unif_addr = indirect.paddr();
+    indirect << (width / 2) * 256.f;   // vp_x_scale
+    indirect << (height / 2) * -256.f; // vp_y_scale
     indirect << 1.0f;                  // w
-    indirect << (width / 2) * 256.f;   // viewport x scale
-    indirect << (height / 2) * -256.f; // viewport y scale
 
     // GL_SHADER_STATE_RECORD requires 32 byte alignment instead of 16
     // apparently?
